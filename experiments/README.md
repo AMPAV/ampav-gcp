@@ -51,6 +51,28 @@ python experiments/gemini_aboutness.py \
 The config supplies `gemini.location`, `gemini.model`, and optional generation
 defaults. Authentication uses Application Default Credentials.
 
+## Video Intelligence
+
+`video_intelligence.py` temporarily uploads one local video, submits one native
+asynchronous annotation operation combining shot, label, OCR text, face,
+person, and object features, retains the native request/operation/response, and
+deletes the temporary upload.
+
+Person bounding boxes and attributes are enabled by default. Pose landmarks
+are opt-in with `--pose-landmarks` because the retained provider probe returned
+a calculator failure when pose generation was enabled.
+
+```bash
+python experiments/video_intelligence.py \
+  --config CONFIG.yaml \
+  --input VIDEO.mp4 \
+  --output-dir RUN_DIRECTORY
+```
+
+The config supplies `video_intelligence.location` and
+`video_intelligence.model`. Authentication uses Application Default
+Credentials.
+
 ## Speech-to-Text
 
 `speech_to_text.py` uploads one local audio file to a caller-selected GCS

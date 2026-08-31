@@ -17,6 +17,7 @@ dependencies = [
     "ampav-core>=0.0.20",
     "google-cloud-language==2.21.0",
     "google-cloud-speech==2.40.0",
+    "google-cloud-videointelligence==2.20.0",
     "google-genai==2.20.0",
 ]
 
