@@ -22,6 +22,31 @@ Application Default Credentials provide authentication. Set
 `include_tool_private=True` only when the native provider response is needed
 for troubleshooting.
 
+The blocking pipeline adapter owns the upload and default cleanup needed for a
+local media file:
+
+```python
+from ampav_gcp_pipeline import transcribe_file
+
+output = transcribe_file(
+    "audio.wav",
+    project_id="project-id",
+    input_bucket="bucket-name",
+)
+```
+
+The CLI accepts either a caller-owned GCS URI or a local path. Local paths
+require a temporary input bucket:
+
+```bash
+ampav_gcp_speech_to_text gs://bucket/audio.wav --project-id project-id
+ampav_gcp_speech_to_text audio.wav --project-id project-id --input-bucket bucket-name
+```
+
+See `examples/speech_to_text.py` for an existing GCS object and
+`examples/speech_to_text_file.py` for a local-file upload using the bundled
+OpenDoor fixture.
+
 ## Development
 
 Use the shared AMPAV virtual environment and install the package in editable

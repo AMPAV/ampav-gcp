@@ -1,7 +1,9 @@
 """Tests for the integrated Speech-to-Text async tool."""
 
 from datetime import timedelta
+from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from google.cloud.speech_v2.types import cloud_speech
 from google.longrunning import operations_pb2
@@ -11,9 +13,12 @@ from ampav.core.async_tool import AsyncStatusCode
 from ampav.core.schema import ToolOutput, Transcript
 from ampav.gcp import GcpSpeechJobStatus, GcpSpeechToTextBatch
 from ampav.gcp.errors import GcpSpeechToTextError
+from ampav_gcp_cli.speech_to_text import build_cli_parser, main as cli_main
+from ampav_gcp_pipeline import transcribe_file
 
 
 JOB_ID = "projects/test-project/locations/us/operations/test-job"
+OPEN_DOOR = Path(__file__).parents[1] / "examples" / "data" / "OpenDoor.wav"
 
 
 def native_response() -> cloud_speech.BatchRecognizeResponse:
@@ -101,6 +106,37 @@ class _FakeSpeechClient:
         return type("Future", (), {"operation": self.transport.operations_client.operation})()
 
 
+class _FakeBlob:
+    def __init__(self, client, bucket: str, object_name: str) -> None:
+        self.client = client
+        self.bucket = bucket
+        self.object_name = object_name
+
+    def upload_from_filename(self, source: str) -> None:
+        self.client.uploads.append((source, self.bucket, self.object_name))
+
+    def delete(self) -> None:
+        self.client.deleted.append((self.bucket, self.object_name))
+
+
+class _FakeBucket:
+    def __init__(self, client, name: str) -> None:
+        self.client = client
+        self.name = name
+
+    def blob(self, object_name: str) -> _FakeBlob:
+        return _FakeBlob(self.client, self.name, object_name)
+
+
+class _FakeStorageClient:
+    def __init__(self) -> None:
+        self.uploads: list[tuple[str, str, str]] = []
+        self.deleted: list[tuple[str, str]] = []
+
+    def bucket(self, name: str) -> _FakeBucket:
+        return _FakeBucket(self, name)
+
+
 class GcpSpeechToTextBatchTest(unittest.TestCase):
     def setUp(self) -> None:
         self.client = _FakeSpeechClient()
@@ -160,6 +196,66 @@ class GcpSpeechToTextBatchTest(unittest.TestCase):
         operations = self.client.transport.operations_client
         self.assertEqual(operations.cancelled, [JOB_ID])
         self.assertEqual(operations.deleted, [JOB_ID])
+
+    def test_transcribe_file_uploads_fixture_and_deletes_temporary_object(self) -> None:
+        storage = _FakeStorageClient()
+        speech = _FakeSpeechClient()
+
+        output = transcribe_file(
+            OPEN_DOOR,
+            project_id="test-project",
+            input_bucket="gs://bucket",
+            input_object_name="speech-input/OpenDoor.wav",
+            speech_client=speech,
+            storage_client=storage,
+            polling_interval=0.001,
+        )
+
+        self.assertEqual(output.output.text, "Please open the door.")
+        self.assertEqual(storage.uploads, [(str(OPEN_DOOR.resolve()), "bucket", "speech-input/OpenDoor.wav")])
+        self.assertEqual(storage.deleted, [("bucket", "speech-input/OpenDoor.wav")])
+        self.assertEqual(speech.request.files[0].uri, "gs://bucket/speech-input/OpenDoor.wav")
+
+    def test_cli_parser_and_gcs_dispatch(self) -> None:
+        args = build_cli_parser().parse_args(
+            [
+                "gs://bucket/OpenDoor.wav",
+                "--project-id",
+                "test-project",
+                "--location",
+                "us-central1",
+                "--language-code",
+                "en-US",
+                "--no-diarization",
+            ]
+        )
+        self.assertEqual(args.media, "gs://bucket/OpenDoor.wav")
+        self.assertEqual(args.project_id, "test-project")
+        self.assertEqual(args.language_code, ["en-US"])
+        self.assertTrue(args.no_diarization)
+
+        output = ToolOutput(
+            tool_name="gcp_speech_to_text",
+            tool_version="test",
+            output=Transcript(text="Please open the door."),
+        )
+        with (
+            patch("ampav_gcp_cli.speech_to_text.GcpSpeechToTextBatch") as tool_class,
+            patch("builtins.print") as print_output,
+        ):
+            tool_class.return_value.process.return_value = output
+            exit_code = cli_main(
+                ["gs://bucket/OpenDoor.wav", "--project-id", "test-project", "--no-diarization"]
+            )
+
+        self.assertEqual(exit_code, 0)
+        print_output.assert_called_once()
+        tool_class.return_value.process.assert_called_once_with(
+            "gs://bucket/OpenDoor.wav",
+            language_codes=("en-US",),
+            enable_word_time_offsets=True,
+            enable_diarization=False,
+        )
 
 
 if __name__ == "__main__":
