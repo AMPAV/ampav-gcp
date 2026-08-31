@@ -1,4 +1,22 @@
-# Speech-to-Text experiment
+# GCP experiments
+
+## Natural Language entity analysis
+
+`natural_language_entities.py` sends one direct text input to the Natural
+Language V1 entity-analysis API and retains the native request and response.
+
+```bash
+python experiments/natural_language_entities.py \
+  --config CONFIG.yaml \
+  --input TRANSCRIPT.txt \
+  --output-dir RUN_DIRECTORY
+```
+
+The config supplies `project` for the retained manifest and may supply a
+`natural_language.language` default. Authentication uses Application Default
+Credentials and its configured quota project.
+
+## Speech-to-Text
 
 `speech_to_text.py` uploads one local audio file to a caller-selected GCS
 bucket, runs Speech-to-Text V2 batch recognition, retains the native request,
