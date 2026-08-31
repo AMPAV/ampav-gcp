@@ -15,6 +15,13 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "ampav-core>=0.0.20",
+    "google-cloud-speech==2.40.0",
+]
+
+[project.optional-dependencies]
+experiments = [
+    "google-cloud-storage==3.13.1",
+    "PyYAML>=6.0",
 ]
 
 [project.urls]
