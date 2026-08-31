@@ -16,6 +16,23 @@ The config supplies `project` for the retained manifest and may supply a
 `natural_language.language` default. Authentication uses Application Default
 Credentials and its configured quota project.
 
+## Natural Language content classification
+
+`natural_language_classification.py` sends one direct text input to the
+Natural Language classify-text API and retains one native model response. Run
+it separately for V1 and V2 to preserve comparable provider outputs:
+
+```bash
+python experiments/natural_language_classification.py \
+  --config CONFIG.yaml \
+  --input TRANSCRIPT.txt \
+  --model v2 \
+  --content-categories-version v2 \
+  --output-dir RUN_DIRECTORY
+```
+
+The config may supply defaults under `natural_language.classification`.
+
 ## Speech-to-Text
 
 `speech_to_text.py` uploads one local audio file to a caller-selected GCS
