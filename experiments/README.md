@@ -33,6 +33,24 @@ python experiments/natural_language_classification.py \
 
 The config may supply defaults under `natural_language.classification`.
 
+## Gemini aboutness metadata
+
+`gemini_aboutness.py` sends transcript text synchronously to Gemini on Vertex
+AI, applies a caller-owned JSON schema, and retains the complete native SDK
+response. The `combined` mode requests all candidate metadata. Focused modes
+allow direct comparison of `subjects`, `topics`, `themes`, and `categories`.
+
+```bash
+python experiments/gemini_aboutness.py \
+  --config CONFIG.yaml \
+  --input TRANSCRIPT.txt \
+  --mode combined \
+  --output-dir RUN_DIRECTORY
+```
+
+The config supplies `gemini.location`, `gemini.model`, and optional generation
+defaults. Authentication uses Application Default Credentials.
+
 ## Speech-to-Text
 
 `speech_to_text.py` uploads one local audio file to a caller-selected GCS
