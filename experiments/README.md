@@ -1,4 +1,79 @@
-# Speech-to-Text experiment
+# GCP experiments
+
+## Natural Language entity analysis
+
+`natural_language_entities.py` sends one direct text input to the Natural
+Language V1 entity-analysis API and retains the native request and response.
+
+```bash
+python experiments/natural_language_entities.py \
+  --config CONFIG.yaml \
+  --input TRANSCRIPT.txt \
+  --output-dir RUN_DIRECTORY
+```
+
+The config supplies `project` for the retained manifest and may supply a
+`natural_language.language` default. Authentication uses Application Default
+Credentials and its configured quota project.
+
+## Natural Language content classification
+
+`natural_language_classification.py` sends one direct text input to the
+Natural Language classify-text API and retains one native model response. Run
+it separately for V1 and V2 to preserve comparable provider outputs:
+
+```bash
+python experiments/natural_language_classification.py \
+  --config CONFIG.yaml \
+  --input TRANSCRIPT.txt \
+  --model v2 \
+  --content-categories-version v2 \
+  --output-dir RUN_DIRECTORY
+```
+
+The config may supply defaults under `natural_language.classification`.
+
+## Gemini aboutness metadata
+
+`gemini_aboutness.py` sends transcript text synchronously to Gemini on Vertex
+AI, applies a caller-owned JSON schema, and retains the complete native SDK
+response. The `combined` mode requests all candidate metadata. Focused modes
+allow direct comparison of `subjects`, `topics`, `themes`, and `categories`.
+
+```bash
+python experiments/gemini_aboutness.py \
+  --config CONFIG.yaml \
+  --input TRANSCRIPT.txt \
+  --mode combined \
+  --output-dir RUN_DIRECTORY
+```
+
+The config supplies `gemini.location`, `gemini.model`, and optional generation
+defaults. Authentication uses Application Default Credentials.
+
+## Video Intelligence
+
+`video_intelligence.py` temporarily uploads one local video, submits one native
+asynchronous annotation operation combining shot, label, OCR text, face,
+person, and object features, retains the native request/operation/response, and
+deletes the temporary upload.
+
+Person bounding boxes and attributes are enabled by default. Pose landmarks
+are opt-in with `--pose-landmarks` because the retained provider probe returned
+a calculator failure when pose generation was enabled.
+
+```bash
+python experiments/video_intelligence.py \
+  --config CONFIG.yaml \
+  --input VIDEO.mp4 \
+  --output-dir RUN_DIRECTORY
+```
+
+The config supplies `video_intelligence.location` and
+`video_intelligence.model`. Authentication uses Application Default
+Credentials.
+
+## Speech-to-Text
 
 `speech_to_text.py` uploads one local audio file to a caller-selected GCS
 bucket, runs Speech-to-Text V2 batch recognition, retains the native request,

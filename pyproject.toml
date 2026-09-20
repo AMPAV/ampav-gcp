@@ -15,14 +15,20 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "ampav-core>=0.0.20",
+    "google-cloud-language==2.21.0",
     "google-cloud-speech==2.40.0",
+    "google-cloud-storage==3.13.1",
+    "google-cloud-videointelligence==2.20.0",
+    "google-genai==2.20.0",
 ]
 
 [project.optional-dependencies]
 experiments = [
-    "google-cloud-storage==3.13.1",
     "PyYAML>=6.0",
 ]
+
+[project.scripts]
+ampav_gcp_speech_to_text = "ampav_gcp_cli.speech_to_text:main"
 
 [project.urls]
 Homepage = "https://github.com/AMPAV/ampav-gcp"
